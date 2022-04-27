@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 
-const authorSchema = new mangoose.Schema(
+const authorSchema = new mongoose.Schema(
   {
     fname: {
       type: String,
@@ -13,7 +13,7 @@ const authorSchema = new mangoose.Schema(
     title: {
       type: String,
       required: true,
-      enum: [Mr, Mrs, Miss],
+      enum: ["Mr", "Mrs", "Miss"],
     },
     email: {
       type: String,
