@@ -2,6 +2,8 @@ const blogModel = require("../models/blogModel");
 const authorModel = require("../models/authorModel");
 const mongoose = require("mongoose");
 
+//------------------------------------------------------------------------------------------------------------------------------------------------------
+
 const createBlog = async function (req, res) {
   try {
     let data = req.body;
@@ -12,17 +14,20 @@ const createBlog = async function (req, res) {
       if (!validationAuthorId) return res.send({ msg: "enter valid authorId" });
 
       if (!data.title)
-        return res
-          .status(400)
-          .send({ status : false , error : " Please enter title for the blog (Required Field)"});
+        return res.status(400).send({
+          status: false,
+          error: " Please enter title for the blog (Required Field)",
+        });
       if (!data.body)
-        return res
-          .status(400)
-          .send({ status : false , error : " Please enter body for the blog (Required Field)"});
+        return res.status(400).send({
+          status: false,
+          error: " Please enter body for the blog (Required Field)",
+        });
       if (!data.category)
-        return res
-          .status(400)
-          .send({status : false , error :" Please enter category for the blog (Required Field)"});
+        return res.status(400).send({
+          status: false,
+          error: " Please enter category for the blog (Required Field)",
+        });
 
       for (const [key, value] of Object.entries(req.body)) {
         if (onlySpaces(`${value}`) == true) {
@@ -38,34 +43,89 @@ const createBlog = async function (req, res) {
       }
       let blog = req.body;
       let blogCreated = await blogModel.create(blog);
-      console.log(blogCreated);
-      res.status(201).send({ data: blogCreated });
+      res.status(201).send({ status: true, data: blogCreated });
     } else {
-      return res.status(400).send({ msg: "Bad request" });
+      return res.status(400).send({ status: false, msg: "Bad request" });
     }
   } catch (err) {
     res.status(500).send({ msg: "server error", error: err.message });
   }
 };
+
 //------------------------------------------------------------------------------------------------------------------------------------------------------
 
 const getBlogs = async function (req, res) {
   try {
-    let collection = await blogModel.find({
-      $and: [{ $isPublished: true }, { $isDeleted: false }],
-    });
-    // res.status(200).send({ status: true, msg: collection })
-    console.log(collection);
-    if (!collection) {
-      res.status(404).send({ status: false, msg: "Blogs Not Found" });
-    } else {
-      let data = req.query;
-      let getByQuery = await blogModel.find(data);
-      if (getByQuery.length <= 0) {
-        res.status(404).send({ status: false, msg: "Data Not Found" });
-      } else {
-        res.status(200).send({ status: true, data: getByQuery });
+    // Data sent through query params
+    let authorid = req.query.authorId;
+    let category = req.query.category;
+    let tags = req.query.tags;
+    let subcategory = req.query.subcategory;
+
+    // DATA VALIDATIONS:
+    // CASE-1: Every query param's value is empty, i.e., ""(empty string)
+    if (!authorid && !category && !tags && !subcategory) {
+      return res.status(400).send({
+        status: false,
+        error: "Please enter any one query param to proceed!",
+      });
+    }
+    // CASE-2: authorid path variable's value is not an ObjectId; EXCEPTION: mongoose.isValidObjectId is true for 12 character long string
+    if (!mongoose.isValidObjectId(authorid) && authorid.length !== 12) {
+      return res
+        .status(400)
+        .send({ status: false, msg: "authorid is invalid!" });
+    }
+    // SPECIAL CONSIDERATION: authorid path variable's value is a 12 character long string
+    // (Taken into account because mongoose.isValidObjectId is true for 12 character long string)
+    else if (authorid.length === 12) {
+      return res
+        .status(400)
+        .send({ status: false, msg: "authorid is invalid!" });
+    }
+
+    //Array containing query params as objects
+    let conditionArr = [
+      { authorId: authorid },
+      { category: category },
+      { tags: tags },
+      { subcategory: subcategory },
+    ];
+
+    //ConditionArr is manipulated in such a way that if values(against respective keys in query params) are not entered then that object is eliminated all together from ConditionArr
+    for (let i = 0; i < conditionArr.length; i++) {
+      // "x" is an element(OBJECT type) inside conditionArr (index according to iteration)
+      let x = conditionArr[i];
+
+      // Object.values() is used to access the value of "x" OBJECT; since we don't know the key(changes according to iteration)
+
+      // valueArr is an ARRAY containing a single element(value of "x" OBJECT)
+      valueArr = Object.values(x);
+      // Hence, we will use valueArr[0] to access it
+      if (!valueArr[0]) {
+        conditionArr.splice(i, 1);
+        i--;
       }
+    }
+
+    let Blogs = await blogModel.find({
+      $and: conditionArr,
+    });
+
+    // If there exists no blog satisfying the conditions
+    // Then, Boolean(Blogs.length) === false
+    // Thus, Boolean(!Blogs.length) === true
+    if (!Blogs.length) {
+      return res
+        .status(404)
+        .send({ status: false, msg: "We are sorry; Blogs does not exist" });
+    }
+
+    // If there exists blog(s) satisfying the conditions
+    if (Blogs.length) {
+      let deleteBlogs = await blogModel.find({ $and: conditionArr });
+
+      res.send({ status: true, msg: deleteBlogs });
     }
   } catch (error) {
     res.status(500).send({ status: false, error: error.message });
@@ -73,6 +133,7 @@ const getBlogs = async function (req, res) {
 };
 
 //----------------------------------------------------------------------------------------------------------------------------------------------------
+
 const updateBlog = async function (req, res) {
   try {
     var today = new Date();
@@ -144,10 +205,10 @@ const updateBlog = async function (req, res) {
     else
       res.status(404).send({
         status: false,
-        error: " Blog with this id does not exist",   //due to privacy concerns, we are not telling client that document has been deleted
+        error: " Blog with this id does not exist", //due to privacy concerns, we are not telling client that document has been deleted
       });
   } catch (err) {
-    console.log(err);
+    // console.log(err);
     res.status(500).send({
       status: false,
       msg: "Internal Server Error",
@@ -162,8 +223,6 @@ const deleteBlog = async function (req, res) {
   try {
     // "data" stores the blogId sent through path variable
     let data = req.params.blogId;
-    console.log(typeof data);
-    console.log(data);
 
     // DATA VALIDATION:
     // CASE-1: blogId path variable is empty
@@ -184,7 +243,7 @@ const deleteBlog = async function (req, res) {
 
     // "check" OBJECT will contain a key "isDeleted" and its value; of the blog document corresponding to the blogId
     let check = await blogModel.findOne(
-      { _id: data, isPublished: true }, // isPublished: true is required for a blog to be deleted
+      { _id: data },
       {
         isDeleted: 1,
         _id: 0,
@@ -198,9 +257,7 @@ const deleteBlog = async function (req, res) {
     // If check is not null, then:
     // Object.keys(check).length will give the length of the array created using Object.keys against "check" object
 
-    //CONDITION: isPublished: false
-
-    //CONDITION: isPublished: true
+    //CONDITIONS
     //CASE-1: blogId does not exist
     if (!check) {
       return res.status(404).send({
@@ -222,7 +279,6 @@ const deleteBlog = async function (req, res) {
       let savedData = await blogModel.findOneAndUpdate(
         {
           _id: data,
-          isPublished: true,
         },
         {
           isDeleted: true,
@@ -264,7 +320,20 @@ const deleteBlogsQueryParams = async function (req, res) {
         error: "Please enter any one query param to proceed!",
       });
     }
-    // CASE-2: isPublished's allowed values are "true", "false" and ""(empty string); Hence, empty string should not pass the below "if" statement
+    // CASE-2: authorid path variable's value is not an ObjectId; EXCEPTION: mongoose.isValidObjectId is true for 12 character long string
+    if (!mongoose.isValidObjectId(authorid) && authorid.length !== 12) {
+      return res
+        .status(400)
+        .send({ status: false, msg: "authorid is invalid!" });
+    }
+    // SPECIAL CONSIDERATION: authorid path variable's value is a 12 character long string
+    // (Taken into account because mongoose.isValidObjectId is true for 12 character long string)
+    else if (authorid.length === 12) {
+      return res
+        .status(400)
+        .send({ status: false, msg: "authorid is invalid!" });
+    }
+    // CASE-3: isPublished's allowed values are "true", "false" and ""(empty string); Hence, empty string should not pass the below "if" statement
     if (
       isPublished !== "true" &&
       isPublished !== "false" &&
@@ -300,7 +369,6 @@ const deleteBlogsQueryParams = async function (req, res) {
         i--;
       }
     }
-    console.log(conditionArr);
 
     let Blogs = await blogModel.find({
       $and: conditionArr,
