@@ -19,7 +19,13 @@ const createAuthor = async function (req, res) {
       return res
         .status(400)
         .send({ status : false, msg: " Please Enter title(required field)" });
-    } else if (
+    }  
+      // else if (
+      // !data.title !== "Mr" ||
+      // !data.title !== "Mrs" ||
+      // !data.title !== "Miss"
+      //) did not work 
+    else if (                                                     
       !data.title === "Mr" ||
       !data.title === "Mrs" ||
       !data.title === "Miss"

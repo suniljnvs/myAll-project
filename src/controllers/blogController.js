@@ -48,6 +48,7 @@ const createBlog = async function (req, res) {
   }
 };
 //------------------------------------------------------------------------------------------------------------------------------------------------------
+
 const getBlogs = async function (req, res) {
   try {
     let collection = await blogModel.find({
@@ -143,7 +144,7 @@ const updateBlog = async function (req, res) {
     else
       res.status(404).send({
         status: false,
-        error: " Object with this id has been deleted",
+        error: " Blog with this id does not exist",   //due to privacy concerns, we are not telling client that document has been deleted
       });
   } catch (err) {
     console.log(err);
