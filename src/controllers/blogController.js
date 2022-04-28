@@ -16,24 +16,24 @@ const createBlog = async function (req, res) {
       if (!data.title)
         return res.status(400).send({
           status: false,
-          error: " Please enter title for the blog (Required Field)",
+          msg: " Please enter title for the blog (Required Field)",
         });
       if (!data.body)
         return res.status(400).send({
           status: false,
-          error: " Please enter body for the blog (Required Field)",
+          msg: " Please enter body for the blog (Required Field)",
         });
       if (!data.category)
         return res.status(400).send({
           status: false,
-          error: " Please enter category for the blog (Required Field)",
+          msg: " Please enter category for the blog (Required Field)",
         });
 
       for (const [key, value] of Object.entries(req.body)) {
         if (onlySpaces(`${value}`) == true) {
           return res.status(400).send({
             status: false,
-            error: "Empty Spaces are not accepted in " + `${key}`,
+            msg: "Empty Spaces are not accepted in " + `${key}`,
           });
         }
 
@@ -48,7 +48,7 @@ const createBlog = async function (req, res) {
       return res.status(400).send({ status: false, msg: "Bad request" });
     }
   } catch (err) {
-    res.status(500).send({ msg: "server error", error: err.message });
+    res.status(500).send({ msg: "Internal Server Error", error: err.message });
   }
 };
 
@@ -67,7 +67,7 @@ const getBlogs = async function (req, res) {
     if (!authorid && !category && !tags && !subcategory) {
       return res.status(400).send({
         status: false,
-        error: "Please enter any one query param to proceed!",
+        msg: "Please enter any one query param to proceed!",
       });
     }
     // CASE-2: authorid path variable's value is not an ObjectId; EXCEPTION: mongoose.isValidObjectId is true for 12 character long string
@@ -133,8 +133,8 @@ const getBlogs = async function (req, res) {
 
       res.send({ status: true, msg: requiredBlogs });
     }
-  } catch (error) {
-    res.status(500).send({ status: false, error: error.message });
+  } catch (err) {
+    res.status(500).send({ status: false, error: err.message });
   }
 };
 
@@ -166,7 +166,7 @@ const updateBlog = async function (req, res) {
     if (!blogs)
       return res
         .status(404)
-        .send({ status: false, error: "blogId does not exist - Invalid" });
+        .send({ status: false, msg: "blogId does not exist - Invalid" });
 
     //Creating an object named fieldToUpdate with all the possible key-value pair which can be passed from body
     let fieldToUpdate = {
@@ -195,17 +195,11 @@ const updateBlog = async function (req, res) {
     //now we have only those key-value pair combinations which are passed by the client
     //Because our body and subcategory are an array of string , so we have to push the req.body data into the pre-existing data and similiarly in case of body which is string by type we are concatenating the new data to the pre existing string.
     let blog = await blogModel.findById(blogId);
-    //Saving pre-existing body data in updatedBody variable
     let updatedBody = blog.body;
-    //Concatenating req.body.body data to pre-existing data
     updatedBody += req.body.body;
-    //Saving pre-existing tags data in updatedTags variable
     let updatedTags = blog.tags;
-    //Pushing req.body.tags data to pre-existing data
     updatedTags.push(req.body.tags);
-    //Saving pre-existing subcategory data in updatedSubcategory variable
     let updatedSubcategory = blog.subcategory;
-    //Pushing req.body.subcategory data to pre-existing data
     updatedSubcategory.push(req.body.subcategory);
 
     //Because tags , subcategory and body data needs to be added in pre-existing data, so they are updated in this manner
@@ -231,11 +225,11 @@ const updateBlog = async function (req, res) {
       );
       return res.status(200).send({ status: true, data: updatedData });
     }
-    //If the blog is already been deleted , it would display the error message
+    //If the blog is already been deleted , it would display the msg message
     else
       res.status(404).send({
         status: false,
-        error: " Blog with this id does not exist", //due to privacy concerns, we are not telling client that document has been deleted
+        msg: " Blog with this id does not exist", //due to privacy concerns, we are not telling client that document has been deleted
       });
   } catch (err) {
     // console.log(err);
@@ -347,9 +341,12 @@ const deleteBlogsQueryParams = async function (req, res) {
     ) {
       return res.status(400).send({
         status: false,
-        error: "Please enter any one query param to proceed!",
+        msg: "Please enter any one query param to proceed!",
       });
     }
+
+    //📌 mongoose.Types.ObjectId.isValid(authorid)
+
     // CASE-2: authorid path variable's value is not an ObjectId; EXCEPTION: mongoose.isValidObjectId is true for 12 character long string
     if (!authorid === "") {
       if (!mongoose.isValidObjectId(authorid) && authorid.length !== 12) {
@@ -375,7 +372,7 @@ const deleteBlogsQueryParams = async function (req, res) {
     ) {
       return res.status(400).send({
         status: false,
-        error: "isPublished has invalid value!",
+        msg: "isPublished has invalid value!",
       });
     }
 
@@ -423,7 +420,7 @@ const deleteBlogsQueryParams = async function (req, res) {
       let deleteBlogs = await blogModel
         .find({ $and: conditionArr }) // put ispublished equal to true
         .updateMany({}, { isDeleted: true });
-      return res.send({ msg: deleteBlogs });
+      return res.status(200).send({ status: true, msg: deleteBlogs });
     }
   } catch (err) {
     res.status(500).send({ msg: "Internal Server Error", error: err.message });

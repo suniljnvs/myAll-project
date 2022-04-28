@@ -5,36 +5,33 @@ const createAuthor = async function (req, res) {
     let data = req.body;
 
     // VALIDATION:
+    // fname validation
     if (!data.fname) {
       return res
         .status(400)
-        .send({ status: false, error: "Please Enter fname(required field) " });
+        .send({ status: false, msg: "Please Enter fname(required field) " });
     }
+
+    // lname validation
     if (!data.lname) {
       return res
         .status(400)
-        .send({ status: false, error: " Please Enter lname(required field)" });
+        .send({ status: false, msg: " Please Enter lname(required field)" });
     }
+
+    // title validation
+    let enumArr = ["Mr", "Mrs", "Miss"];
     if (!data.title) {
       return res
         .status(400)
         .send({ status: false, msg: " Please Enter title(required field)" });
-    }
-    // Just DOCUMENTING errors(SKIP)
-    // else if (
-    // !data.title !== "Mr" ||
-    // !data.title !== "Mrs" ||
-    // !data.title !== "Miss"
-    //) did not work
-    else if (
-      !data.title === "Mr" ||
-      !data.title === "Mrs" ||
-      !data.title === "Miss"
-    ) {
+    } else if (!enumArr.includes(data.title)) {
       return res
         .status(400)
-        .send({ status: false, error: "Please enter valid title" });
+        .send({ status: false, msg: "Please enter valid title" });
     }
+
+    // email validation
     if (!data.email) {
       return res
         .status(400)
@@ -51,11 +48,23 @@ const createAuthor = async function (req, res) {
       if (!(data.email === String(data.email).toLowerCase())) {
         return res.status(400).send({
           status: false,
-          msg: " Capital letters are not allowed in emailid",
+          msg: "Capital letters are not allowed in emailid",
         });
       }
     }
+    // email duplication check
+    let emaildb = await authorModel.findOne(
+      { email: data.email },
+      { email: 1, _id: 0 }
+    );
+    if (emaildb.email) {
+      return res.status(400).send({
+        status: false,
+        msg: "We are sorry; this email is already registered",
+      });
+    }
 
+    // password validation
     if (!data.password) {
       return res
         .status(400)
@@ -66,7 +75,7 @@ const createAuthor = async function (req, res) {
       if (onlySpaces(`${value}`) == true) {
         return res.status(400).send({
           status: false,
-          error: "Empty Spaces are not accepted in " + `${key}`,
+          msg: "Empty Spaces are not accepted in " + `${key}`,
         });
       }
 
