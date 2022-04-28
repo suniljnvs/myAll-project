@@ -164,4 +164,92 @@ const deleteBlog = async function (req, res) {
 
 // -----------------------------------------------------------------------------------------------------------------------------------------------------
 
-module.exports = { updateBlog, deleteBlog };
+const deleteBlogsQueryParams = async function (req, res) {
+  try {
+    // Data sent through query params
+    let category = req.query.category;
+    let authorid = req.query.authorid;
+    let tagName = req.query["tag name"];
+    let subcategoryName = req.query["subcategory name"];
+    let isPublished = req.query.isPublished;
+
+    // DATA VALIDATIONS:
+    // CASE-1: Every query param's value is empty, i.e., ""(empty string)
+    if (
+      !category &&
+      !authorid &&
+      !tagName &&
+      !subcategoryName &&
+      !isPublished
+    ) {
+      return res.status(400).send({
+        status: false,
+        error: "Please enter any one query param to proceed!",
+      });
+    }
+    // CASE-2: isPublished's allowed values are "true", "false" and ""(empty string); Hence, empty string should not pass the below "if" statement
+    if (
+      isPublished !== "true" &&
+      isPublished !== "false" &&
+      isPublished !== ""
+    ) {
+      return res.status(400).send({
+        status: false,
+        error: "isPublished has invalid value!",
+      });
+    }
+
+    //Array containing query params as objects
+    let conditionArr = [
+      { category: category },
+      { authorid: authorid },
+      { tagName: tagName },
+      { subcategory: subcategoryName },
+      { isPublished: isPublished },
+    ];
+
+    //ConditionArr is manipulated in such a way that if values(against respective keys in query params) are not entered then that object is eliminated all together from ConditionArr
+    for (let i = 0; i < conditionArr.length; i++) {
+      // "x" is an element(OBJECT type) inside conditionArr (index according to iteration)
+      let x = conditionArr[i];
+
+      // Object.values() is used to access the value of "x" OBJECT; since we don't know the key(changes according to iteration)
+
+      // valueArr is an ARRAY containing a single element(value of "x" OBJECT)
+      valueArr = Object.values(x);
+      // Hence, we will use valueArr[0] to access it
+      if (!valueArr[0]) {
+        conditionArr.splice(i, 1);
+        i--;
+      }
+    }
+    console.log(conditionArr);
+
+    let Blogs = await blogModel.find({
+      $and: conditionArr,
+    });
+
+    // If there exists no blog satisfying the conditions
+    // Then, Boolean(Blogs.length) === false
+    // Thus, Boolean(!Blogs.length) === true
+    if (!Blogs.length) {
+      return res
+        .status(404)
+        .send({ status: false, msg: "We are sorry; Blog does not exist" });
+    }
+
+    // If there exists blog(s) satisfying the conditions
+    if (Blogs.length) {
+      let deleteBlogs = await blogModel
+        .find({ $and: conditionArr }) // put ispublished equal to true
+        .updateMany({}, { isDeleted: true });
+      res.send({ msg: deleteBlogs });
+    }
+  } catch (err) {
+    res.status(500).send({ msg: "Internal Server Error", error: err.message });
+  }
+};
+
+//------------------------------------------------------------------------------------------------------------------------------------------------------
+
+module.exports = { updateBlog, deleteBlog, deleteBlogsQueryParams };
