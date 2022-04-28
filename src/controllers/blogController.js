@@ -1,5 +1,7 @@
 const blogModel = require("../models/blogModel");
+const mongoose = require("mongoose");
 
+//------------------------------------------------------------------------------------------------------------------------------------------------------
 
 const updateBlog = async function (req, res) {
   try {
@@ -52,7 +54,7 @@ const updateBlog = async function (req, res) {
     if ("isPublished" in fieldToUpdate) {
       fieldToUpdate.publishedAt = today;
     }
-    
+
     if (!blog.isDeleted == true) {
       let updatedData = await blogModel.findByIdAndUpdate(
         blogId,
@@ -60,15 +62,13 @@ const updateBlog = async function (req, res) {
         { new: true, upsert: true }
       );
       return res.status(200).send({ status: true, data: updatedData });
-    } 
+    }
     //If the blog is already been deleted , it would display the error message
     else
-      res
-        .status(404)
-        .send({
-          status: false,
-          error: " Object with this id has been deleted",
-        });
+      res.status(404).send({
+        status: false,
+        error: " Object with this id has been deleted",
+      });
   } catch (err) {
     console.log(err);
     res.status(500).send({
@@ -79,5 +79,89 @@ const updateBlog = async function (req, res) {
   }
 };
 
+//------------------------------------------------------------------------------------------------------------------------------------------------------
 
-module.exports = { createBlog, updateBlog };
+const deleteBlog = async function (req, res) {
+  try {
+    // "data" stores the blogId sent through path variable
+    let data = req.params.blogId;
+    console.log(typeof data);
+    console.log(data);
+
+    // DATA VALIDATION:
+    // CASE-1: blogId path variable is empty
+    if (data === ":blogId") {
+      return res
+        .status(400)
+        .send({ status: false, msg: "Please enter blogId to proceed!" });
+    }
+    // CASE-2: blogId path variable's value is not an ObjectId; EXCEPTION: mongoose.isValidObjectId is true for 12 character long string
+    else if (!mongoose.isValidObjectId(data) && data.length !== 12) {
+      return res.status(400).send({ status: false, msg: "blogId is invalid!" });
+    }
+    // SPECIAL CONSIDERATION: blogId path variable's value is a 12 character long string
+    // (Taken into account because mongoose.isValidObjectId is true for 12 character long string)
+    else if (data.length === 12) {
+      return res.status(400).send({ status: false, msg: "blogId is invalid!" });
+    }
+
+    // "check" OBJECT will contain a key "isDeleted" and its value; of the blog document corresponding to the blogId
+    let check = await blogModel.findOne(
+      { _id: data, isPublished: true }, // isPublished: true is required for a blog to be deleted
+      {
+        isDeleted: 1,
+        _id: 0,
+      }
+    );
+
+    // if check is null; we can't use Object.keys(check) to validate
+    // hence, we use !check to validate
+
+    // Object.keys(check) won't work if check === null;
+    // If check is not null, then:
+    // Object.keys(check).length will give the length of the array created using Object.keys against "check" object
+
+    //CONDITION: isPublished: false
+
+    //CONDITION: isPublished: true
+    //CASE-1: blogId does not exist
+    if (!check) {
+      return res.status(404).send({
+        status: false,
+        msg: "We are sorry; Given blogId does not exist",
+      });
+    }
+
+    //CASE-2: blogId exists but is deleted
+    else if (check && check.isDeleted) {
+      return res.status(404).send({
+        status: false,
+        msg: "We are sorry; Given blogId does not exist",
+      });
+    }
+
+    //CASE-3: blogId exists but is not deleted
+    else if (check && !check.isDeleted) {
+      let savedData = await blogModel.findOneAndUpdate(
+        {
+          _id: data,
+          isPublished: true,
+        },
+        {
+          isDeleted: true,
+        }
+        // ,{ new: true } //We can skip this since, anyways we are not sending the databack using response
+      );
+      // return res.status(200).send({ status: false, msg: savedData }); //Commented: CAN BE USED FOR TESTING
+
+      //Instructions: HTTP status 200 without any response body
+      return res.status(200).send();
+    }
+  } catch (err) {
+    res.status(500).send({ msg: "Internal Server Error", error: err.message });
+  }
+};
+
+// -----------------------------------------------------------------------------------------------------------------------------------------------------
+
+module.exports = { updateBlog, deleteBlog };
