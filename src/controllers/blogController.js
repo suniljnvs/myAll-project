@@ -138,6 +138,30 @@ const updateBlog = async function (req, res) {
   try {
     var today = new Date();
     let blogId = req.params.blogId;
+
+    // CASE-1: blogId path variable is empty
+    if (blogId === ":blogId") {
+      return res
+        .status(400)
+        .send({ status: false, msg: "Please enter blogId to proceed!" });
+    }
+    // CASE-2: blogId path variable's value is not an ObjectId; EXCEPTION: mongoose.isValidObjectId is true for 12 character long string
+    else if (!mongoose.isValidObjectId(blogId) && blogId.length !== 12) {
+      return res.status(400).send({ status: false, msg: "blogId is invalid!" });
+    }
+    // SPECIAL CONSIDERATION: blogId path variable's value is a 12 character long string
+    // (Taken into account because mongoose.isValidObjectId is true for 12 character long string)
+    else if (blogId.length === 12) {
+      return res.status(400).send({ status: false, msg: "blogId is invalid!" });
+    }
+
+    let blogs = await blogModel.findOne({ _id: blogId });
+    console.log(blogs);
+    if (!blogs)
+      return res
+        .status(404)
+        .send({ status: false, error: "blogId does not exist - Invalid" });
+
     //Creating an object named fieldToUpdate with all the possible key-value pair which can be passed from body
     let fieldToUpdate = {
       title: req.body.title,
