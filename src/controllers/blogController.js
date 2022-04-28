@@ -1,6 +1,39 @@
 const blogModel = require("../models/blogModel");
 const mongoose = require("mongoose");
 
+const createBlog = async function (req, res) {
+  try {
+    let data = req.body;
+    if (Object.keys(data).length != 0) {
+      let authorId = req.body.authorId;
+      if (!authorId) return res.send({ msg: "authorId is required" });
+      let validationAuthorId = await authorModel.findById(authorId);
+      if (!validationAuthorId) return res.send({ msg: "enter valid authorId" });
+
+      if (!data.title)
+        return res
+          .status(400)
+          .send(" Please enter title for the blog (Required Field)");
+      if (!data.body)
+        return res
+          .status(400)
+          .send(" Please enter body for the blog (Required Field)");
+      if (!data.category)
+        return res
+          .status(400)
+          .send(" Please enter category for the blog (Required Field)");
+
+      let blog = req.body;
+      let blogCreated = await blogModel.create(blog);
+      console.log(blogCreated);
+      res.status(201).send({ data: blogCreated });
+    } else {
+      return res.status(400).send({ msg: "Bad request" });
+    }
+  } catch (err) {
+    res.status(500).send({ msg: "server error", error: err.message });
+  }
+};
 //------------------------------------------------------------------------------------------------------------------------------------------------------
 
 const updateBlog = async function (req, res) {
@@ -252,4 +285,4 @@ const deleteBlogsQueryParams = async function (req, res) {
 
 //------------------------------------------------------------------------------------------------------------------------------------------------------
 
-module.exports = { updateBlog, deleteBlog, deleteBlogsQueryParams };
+module.exports = { createBlog ,updateBlog, deleteBlog, deleteBlogsQueryParams };
