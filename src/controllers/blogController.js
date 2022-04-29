@@ -70,16 +70,9 @@ const getBlogs = async function (req, res) {
         msg: "Please enter any one query param to proceed!",
       });
     }
-    // CASE-2: authorid path variable's value is not an ObjectId; EXCEPTION: mongoose.isValidObjectId is true for 12 character long string
-    if (!authorid === "") {
-      if (!mongoose.isValidObjectId(authorid) && authorid.length !== 12) {
-        return res
-          .status(400)
-          .send({ status: false, msg: "authorid is invalid!" });
-      }
-      // SPECIAL CONSIDERATION: authorid path variable's value is a 12 character long string
-      // (Taken into account because mongoose.isValidObjectId is true for 12 character long string)
-      else if (authorid.length === 12) {
+    // CASE-2: authorid path variable's value is not an ObjectId
+    if (authorid !== "") {
+      if (!mongoose.Types.ObjectId.isValid(authorid)) {
         return res
           .status(400)
           .send({ status: false, msg: "authorid is invalid!" });
@@ -110,28 +103,21 @@ const getBlogs = async function (req, res) {
       }
     }
 
-    //IMPORTANT CONCEPT: We should not be able to list deleted(isDeleted: true) blogs using "getBlogs"
-    // Hence, {isDeleted: false} is included in conditionArr
+    // We should not be able to list deleted(isDeleted: true) blogs using "getBlogs"
     conditionArr.push({ isDeleted: false });
 
     let Blogs = await blogModel.find({
       $and: conditionArr,
     });
 
-    // If there exists no blog satisfying the conditions
-    // Then, Boolean(Blogs.length) === false
-    // Thus, Boolean(!Blogs.length) === true
     if (Blogs.length === 0) {
       return res
         .status(404)
         .send({ status: false, msg: "We are sorry; Blog(s) does not exist" });
     }
-
     // If there exists blog(s) satisfying the conditions
     if (Blogs.length !== 0) {
-      let requiredBlogs = await blogModel.find({ $and: conditionArr });
-
-      res.send({ status: true, msg: requiredBlogs });
+      res.send({ status: true, msg: Blogs });
     }
   } catch (err) {
     res.status(500).send({ status: false, error: err.message });
@@ -151,13 +137,8 @@ const updateBlog = async function (req, res) {
         .status(400)
         .send({ status: false, msg: "Please enter blogId to proceed!" });
     }
-    // CASE-2: blogId path variable's value is not an ObjectId; EXCEPTION: mongoose.isValidObjectId is true for 12 character long string
-    else if (!mongoose.isValidObjectId(blogId) && blogId.length !== 12) {
-      return res.status(400).send({ status: false, msg: "blogId is invalid!" });
-    }
-    // SPECIAL CONSIDERATION: blogId path variable's value is a 12 character long string
-    // (Taken into account because mongoose.isValidObjectId is true for 12 character long string)
-    else if (blogId.length === 12) {
+    // CASE-2: blogId path variable's value is not an ObjectId
+    else if (!mongoose.Types.ObjectId.isValid(blogid)) {
       return res.status(400).send({ status: false, msg: "blogId is invalid!" });
     }
 
@@ -182,6 +163,7 @@ const updateBlog = async function (req, res) {
     //Object.entries(fieldToUpdate) would return an array of key-value pairs of the object fieldToUpdate
     for (const [key, value] of Object.entries(fieldToUpdate)) {
       if (!value) delete fieldToUpdate[key];
+
       if (onlySpaces(`${value}`) == true) {
         return res.status(400).send({
           status: false,
@@ -229,7 +211,7 @@ const updateBlog = async function (req, res) {
     else
       res.status(404).send({
         status: false,
-        msg: " Blog with this id does not exist", //due to privacy concerns, we are not telling client that document has been deleted
+        msg: " Blog with this id does not exist", //due to privacy concerns, we are not telling that the blog has been deleted
       });
   } catch (err) {
     // console.log(err);
@@ -255,13 +237,8 @@ const deleteBlog = async function (req, res) {
         .status(400)
         .send({ status: false, msg: "Please enter blogId to proceed!" });
     }
-    // CASE-2: blogId path variable's value is not an ObjectId; EXCEPTION: mongoose.isValidObjectId is true for 12 character long string
-    else if (!mongoose.isValidObjectId(data) && data.length !== 12) {
-      return res.status(400).send({ status: false, msg: "blogId is invalid!" });
-    }
-    // SPECIAL CONSIDERATION: blogId path variable's value is a 12 character long string
-    // (Taken into account because mongoose.isValidObjectId is true for 12 character long string)
-    else if (data.length === 12) {
+    // CASE-2: blogId path variable's value is not an ObjectId
+    else if (!mongoose.Types.ObjectId.isValid(data)) {
       return res.status(400).send({ status: false, msg: "blogId is invalid!" });
     }
 
@@ -277,10 +254,6 @@ const deleteBlog = async function (req, res) {
     // if check is null; we can't use Object.keys(check) to validate
     // hence, we use !check to validate
 
-    // Object.keys(check) won't work if check === null;
-    // If check is not null, then:
-    // Object.keys(check).length will give the length of the array created using Object.keys against "check" object
-
     //CONDITIONS
     //CASE-1: blogId does not exist
     if (!check) {
@@ -294,7 +267,7 @@ const deleteBlog = async function (req, res) {
     else if (check && check.isDeleted) {
       return res.status(404).send({
         status: false,
-        msg: "We are sorry; Given blogId does not exist",
+        msg: "We are sorry; Given blogId does not exist", // Due to privacy concerns we are not telling that the blog is deleted
       });
     }
 
@@ -345,31 +318,18 @@ const deleteBlogsQueryParams = async function (req, res) {
       });
     }
 
-    //📌 mongoose.Types.ObjectId.isValid(authorid)
-
-    // CASE-2: authorid path variable's value is not an ObjectId; EXCEPTION: mongoose.isValidObjectId is true for 12 character long string
-    if (!authorid === "") {
-      if (!mongoose.isValidObjectId(authorid) && authorid.length !== 12) {
-        //First check whether  {
-        return res
-          .status(400)
-          .send({ status: false, msg: "authorid is invalid!" });
-      }
-      // SPECIAL CONSIDERATION: authorid path variable's value is a 12 character long string
-      // (Taken into account because mongoose.isValidObjectId is true for 12 character long string)
-      else if (authorid.length === 12) {
+    // CASE-2: authorid path variable's value is not an ObjectId
+    if (authorid !== "") {
+      if (!mongoose.Types.ObjectId.isValid(authorid)) {
         return res
           .status(400)
           .send({ status: false, msg: "authorid is invalid!" });
       }
     }
-    // CASE-3: isPublished's allowed values are "true", "false" and ""(empty string); Hence, empty string should not pass the below "if" statement
-    if (
-      isPublished !== "true" &&
-      isPublished !== "false" &&
-      isPublished !== "" &&
-      isPublished !== undefined
-    ) {
+
+    // CASE-3: isPublished validation:
+    let isPublishedArr = ["true", "false", "", undefined]; //undefined(key value is not entered in req.body)
+    if (!isPublishedArr.includes(isPublished)) {
       return res.status(400).send({
         status: false,
         msg: "isPublished has invalid value!",
@@ -385,6 +345,8 @@ const deleteBlogsQueryParams = async function (req, res) {
       { isPublished: isPublished },
     ];
 
+    // try using a function all the manipulations done
+    // this code is repeated in GET /blogs
     //ConditionArr is manipulated in such a way that if values(against respective keys in query params) are not entered then that object is eliminated all together from ConditionArr
     for (let i = 0; i < conditionArr.length; i++) {
       // "x" is an element(OBJECT type) inside conditionArr (index according to iteration)
@@ -405,10 +367,6 @@ const deleteBlogsQueryParams = async function (req, res) {
       $and: conditionArr,
     });
 
-    // If there exists no blog satisfying the conditions
-    // Then, Boolean(Blogs.length) === false
-    // Thus, Boolean(!Blogs.length) === false ( here, Blogs.length !== 0; still )
-    // Therefore, we will equate it with 0 and check
     if (Blogs.length === 0) {
       return res
         .status(404)
@@ -417,9 +375,10 @@ const deleteBlogsQueryParams = async function (req, res) {
 
     // If there exists blog(s) satisfying the conditions
     if (Blogs.length !== 0) {
-      let deleteBlogs = await blogModel
-        .find({ $and: conditionArr }) // put ispublished equal to true
-        .updateMany({}, { isDeleted: true });
+      let deleteBlogs = await blogModel.updateMany(
+        { $and: conditionArr },
+        { isDeleted: true }
+      );
       return res.status(200).send({ status: true, msg: deleteBlogs });
     }
   } catch (err) {
