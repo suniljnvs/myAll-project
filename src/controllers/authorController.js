@@ -113,7 +113,7 @@ const loginAuthor = async function (req, res) {
       {
         authorId: author._id.toString(),
         books: "Novels",
-        writter: "Author",
+        writer: "Author",
       },
       "project1-group13"
     );
