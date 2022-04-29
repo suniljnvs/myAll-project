@@ -97,21 +97,21 @@ const createAuthor = async function (req, res) {
 
 const loginAuthor = async function (req, res) {
   try {
-    let authorName = req.body.emailId;
+    let email = req.body.email;
     let password = req.body.password;
 
-    let author = await authorModel.findOne({
-      emailId: authorName,
+    let loginCredentials = await authorModel.findOne({
+      email: email,
       password: password,
     });
-    if (!author)
+    if (!loginCredentials)
       return res.status(404).send({
         status: false,
-        error: "authorname or the password is not correct",
+        error: "email or password is incorrect",
       });
     let token = jwt.sign(
       {
-        authorId: author._id.toString(),
+        email: loginCredentials.email.toString(),
         books: "Novels",
         writer: "Author",
       },

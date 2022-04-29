@@ -2,33 +2,67 @@ const blogModel = require("../models/blogModel");
 const authorModel = require("../models/authorModel");
 const mongoose = require("mongoose");
 
+//-----------------------------------------------------------------------------------------------------------------------------------------------------
+
+// function declared to reduce repetitive code
+let arrManipulation = function (conditionArr) {
+  for (let i = 0; i < conditionArr.length; i++) {
+    // "x" is an element(OBJECT type) inside conditionArr (index according to iteration)
+    let x = conditionArr[i];
+
+    // Object.values() is used to access the value of "x" OBJECT; since we don't know the key(changes according to iteration)
+
+    // valueArr is an ARRAY containing a single element(value of "x" OBJECT)
+    valueArr = Object.values(x);
+    // Hence, we will use valueArr[0] to access it
+    if (!valueArr[0]) {
+      conditionArr.splice(i, 1);
+      i--;
+    }
+  }
+};
+
 //------------------------------------------------------------------------------------------------------------------------------------------------------
 
 const createBlog = async function (req, res) {
   try {
     let data = req.body;
     if (Object.keys(data).length != 0) {
+      // If authorId is not entered
       let authorId = req.body.authorId;
       if (!authorId) return res.send({ msg: "authorId is required" });
-      let validationAuthorId = await authorModel.findById(authorId);
-      if (!validationAuthorId) return res.send({ msg: "enter valid authorId" });
 
+      // If authorId is invalid
+      if (!mongoose.Types.ObjectId.isValid(authorId)) {
+        return res.status(400).send({ msg: "authorId is invalid" });
+      }
+      // If given authorId is not present in our database
+      let validationAuthorId = await authorModel.findById(authorId);
+      if (!validationAuthorId)
+        return res.send({ msg: "authorId does not exist" });
+
+      // title validation
       if (!data.title)
         return res.status(400).send({
           status: false,
           msg: " Please enter title for the blog (Required Field)",
         });
+
+      //body validation
       if (!data.body)
         return res.status(400).send({
           status: false,
           msg: " Please enter body for the blog (Required Field)",
         });
+
+      //category validation
       if (!data.category)
         return res.status(400).send({
           status: false,
           msg: " Please enter category for the blog (Required Field)",
         });
 
+      // only spaces validation
       for (const [key, value] of Object.entries(req.body)) {
         if (onlySpaces(`${value}`) == true) {
           return res.status(400).send({
@@ -36,11 +70,11 @@ const createBlog = async function (req, res) {
             msg: "Empty Spaces are not accepted in " + `${key}`,
           });
         }
-
         function onlySpaces(str) {
           return /^\s*$/.test(str);
         }
       }
+
       let blog = req.body;
       let blogCreated = await blogModel.create(blog);
       res.status(201).send({ status: true, data: blogCreated });
@@ -88,20 +122,7 @@ const getBlogs = async function (req, res) {
     ];
 
     //ConditionArr is manipulated in such a way that if values(against respective keys in query params) are not entered then that object is eliminated all together from ConditionArr
-    for (let i = 0; i < conditionArr.length; i++) {
-      // "x" is an element(OBJECT type) inside conditionArr (index according to iteration)
-      let x = conditionArr[i];
-
-      // Object.values() is used to access the value of "x" OBJECT; since we don't know the key(changes according to iteration)
-
-      // valueArr is an ARRAY containing a single element(value of "x" OBJECT)
-      valueArr = Object.values(x);
-      // Hence, we will use valueArr[0] to access it
-      if (!valueArr[0]) {
-        conditionArr.splice(i, 1);
-        i--;
-      }
-    }
+    arrManipulation(conditionArr);
 
     // We should not be able to list deleted(isDeleted: true) blogs using "getBlogs"
     conditionArr.push({ isDeleted: false });
@@ -131,23 +152,7 @@ const updateBlog = async function (req, res) {
     var today = new Date();
     let blogId = req.params.blogId;
 
-    // CASE-1: blogId path variable is empty
-    if (blogId === ":blogId") {
-      return res
-        .status(400)
-        .send({ status: false, msg: "Please enter blogId to proceed!" });
-    }
-    // CASE-2: blogId path variable's value is not an ObjectId
-    else if (!mongoose.Types.ObjectId.isValid(blogid)) {
-      return res.status(400).send({ status: false, msg: "blogId is invalid!" });
-    }
-
-    let blogs = await blogModel.findOne({ _id: blogId });
-    console.log(blogs);
-    if (!blogs)
-      return res
-        .status(404)
-        .send({ status: false, msg: "blogId does not exist - Invalid" });
+    // blogId VALIDATION is already done in authorisation middleware
 
     //Creating an object named fieldToUpdate with all the possible key-value pair which can be passed from body
     let fieldToUpdate = {
@@ -164,6 +169,7 @@ const updateBlog = async function (req, res) {
     for (const [key, value] of Object.entries(fieldToUpdate)) {
       if (!value) delete fieldToUpdate[key];
 
+      // only spaces validation
       if (onlySpaces(`${value}`) == true) {
         return res.status(400).send({
           status: false,
@@ -214,7 +220,6 @@ const updateBlog = async function (req, res) {
         msg: " Blog with this id does not exist", //due to privacy concerns, we are not telling that the blog has been deleted
       });
   } catch (err) {
-    // console.log(err);
     res.status(500).send({
       status: false,
       msg: "Internal Server Error",
@@ -227,44 +232,24 @@ const updateBlog = async function (req, res) {
 
 const deleteBlog = async function (req, res) {
   try {
-    // "data" stores the blogId sent through path variable
-    let data = req.params.blogId;
+    let blogId = req.params.blogId;
 
-    // DATA VALIDATION:
-    // CASE-1: blogId path variable is empty
-    if (data === ":blogId") {
-      return res
-        .status(400)
-        .send({ status: false, msg: "Please enter blogId to proceed!" });
-    }
-    // CASE-2: blogId path variable's value is not an ObjectId
-    else if (!mongoose.Types.ObjectId.isValid(data)) {
-      return res.status(400).send({ status: false, msg: "blogId is invalid!" });
-    }
+    // blogId VALIDATION: done in authorisation
 
     // "check" OBJECT will contain a key "isDeleted" and its value; of the blog document corresponding to the blogId
     let check = await blogModel.findOne(
-      { _id: data },
+      { _id: blogId },
       {
         isDeleted: 1,
         _id: 0,
       }
     );
 
-    // if check is null; we can't use Object.keys(check) to validate
-    // hence, we use !check to validate
-
     //CONDITIONS
-    //CASE-1: blogId does not exist
-    if (!check) {
-      return res.status(404).send({
-        status: false,
-        msg: "We are sorry; Given blogId does not exist",
-      });
-    }
+    //CASE-1: blogId does not exist: validation already done in authorisation middleware
 
     //CASE-2: blogId exists but is deleted
-    else if (check && check.isDeleted) {
+    if (check && check.isDeleted) {
       return res.status(404).send({
         status: false,
         msg: "We are sorry; Given blogId does not exist", // Due to privacy concerns we are not telling that the blog is deleted
@@ -275,7 +260,7 @@ const deleteBlog = async function (req, res) {
     else if (check && !check.isDeleted) {
       let savedData = await blogModel.findOneAndUpdate(
         {
-          _id: data,
+          _id: blogId,
         },
         {
           isDeleted: true,
@@ -283,8 +268,6 @@ const deleteBlog = async function (req, res) {
         // ,{ new: true } //We can skip this since, anyways we are not sending the databack using response
       );
       // return res.status(200).send({ status: false, msg: savedData }); //Commented: CAN BE USED FOR TESTING
-
-      //Instructions: HTTP status 200 without any response body
       return res.status(200).send();
     }
   } catch (err) {
@@ -304,30 +287,7 @@ const deleteBlogsQueryParams = async function (req, res) {
     let isPublished = req.query.isPublished;
 
     // DATA VALIDATIONS:
-    // CASE-1: Every query param's value is empty, i.e., ""(empty string)
-    if (
-      !category &&
-      !authorid &&
-      !tagName &&
-      !subcategoryName &&
-      !isPublished
-    ) {
-      return res.status(400).send({
-        status: false,
-        msg: "Please enter any one query param to proceed!",
-      });
-    }
-
-    // CASE-2: authorid path variable's value is not an ObjectId
-    if (authorid !== "") {
-      if (!mongoose.Types.ObjectId.isValid(authorid)) {
-        return res
-          .status(400)
-          .send({ status: false, msg: "authorid is invalid!" });
-      }
-    }
-
-    // CASE-3: isPublished validation:
+    // isPublished validation:
     let isPublishedArr = ["true", "false", "", undefined]; //undefined(key value is not entered in req.body)
     if (!isPublishedArr.includes(isPublished)) {
       return res.status(400).send({
@@ -345,23 +305,8 @@ const deleteBlogsQueryParams = async function (req, res) {
       { isPublished: isPublished },
     ];
 
-    // try using a function all the manipulations done
-    // this code is repeated in GET /blogs
     //ConditionArr is manipulated in such a way that if values(against respective keys in query params) are not entered then that object is eliminated all together from ConditionArr
-    for (let i = 0; i < conditionArr.length; i++) {
-      // "x" is an element(OBJECT type) inside conditionArr (index according to iteration)
-      let x = conditionArr[i];
-
-      // Object.values() is used to access the value of "x" OBJECT; since we don't know the key(changes according to iteration)
-
-      // valueArr is an ARRAY containing a single element(value of "x" OBJECT)
-      valueArr = Object.values(x);
-      // Hence, we will use valueArr[0] to access it
-      if (!valueArr[0]) {
-        conditionArr.splice(i, 1);
-        i--;
-      }
-    }
+    arrManipulation(conditionArr);
 
     let Blogs = await blogModel.find({
       $and: conditionArr,
