@@ -1,4 +1,3 @@
-const { decode } = require("jsonwebtoken"); // what is decode used for?
 const jwt = require("jsonwebtoken");
 const authorModel = require("../models/authorModel");
 const blogModel = require("../models/blogModel");
@@ -100,7 +99,7 @@ const authorisation = async function (req, res, next) {
     }
 
     //CASE-3(authorId VALIDATION): authorId key's value in query param is empty
-    else if (!authorId&&!blogId) {
+    else if (!authorId && !blogId) {
       return res.status(400).send({
         status: false,
         msg: "Please enter authorId to proceed",

@@ -58,7 +58,7 @@ const createAuthor = async function (req, res) {
       { email: data.email },
       { email: 1, _id: 0 }
     );
-    if (emaildb.email) {
+    if (emaildb) {
       return res.status(400).send({
         status: false,
         msg: "We are sorry; this email is already registered",
