@@ -62,6 +62,13 @@ const createBlog = async function (req, res) {
           msg: " Please enter category for the blog (Required Field)",
         });
 
+      //isPublished validation
+      if (data.isPublished != true || data.isPublished != false)
+        return res.status(400).send({
+          status: false,
+          msg: "isPublished invalid ! allowed values : true , false",
+        });
+
       // only spaces validation
       for (const [key, value] of Object.entries(req.body)) {
         if (onlySpaces(`${value}`) == true) {
@@ -97,19 +104,21 @@ const getBlogs = async function (req, res) {
     let subcategory = req.query.subcategory;
 
     // DATA VALIDATIONS:
-    // CASE-1: Every query param's value is empty, i.e., ""(empty string)
+    //CASE-1: Every query param's value is empty, i.e., ""(empty string)
+    let data = await blogModel.find().populate("authorId");
     if (!authorid && !category && !tags && !subcategory) {
       return res.status(400).send({
         status: false,
-        msg: "Please enter any one query param to proceed!",
+        msg: "No query parameter(s) applied ",
+        data: data,
       });
     }
     // CASE-2: authorid path variable's value is not an ObjectId
-    if (authorid !== "") {
+    if (authorid !== "" && authorid) {
       if (!mongoose.Types.ObjectId.isValid(authorid)) {
         return res
           .status(400)
-          .send({ status: false, msg: "authorid is invalid!" });
+          .send({ status: false, msg: "authorid is invalid" });
       }
     }
 
@@ -129,7 +138,7 @@ const getBlogs = async function (req, res) {
 
     let Blogs = await blogModel.find({
       $and: conditionArr,
-    });
+    }).populate('authorId');
 
     if (Blogs.length === 0) {
       return res
@@ -138,7 +147,7 @@ const getBlogs = async function (req, res) {
     }
     // If there exists blog(s) satisfying the conditions
     if (Blogs.length !== 0) {
-      res.send({ status: true, msg: Blogs });
+      res.status(200).send({ status: true, msg: Blogs });
     }
   } catch (err) {
     res.status(500).send({ status: false, error: err.message });
@@ -183,22 +192,24 @@ const updateBlog = async function (req, res) {
     //now we have only those key-value pair combinations which are passed by the client
     //Because our body and subcategory are an array of string , so we have to push the req.body data into the pre-existing data and similiarly in case of body which is string by type we are concatenating the new data to the pre existing string.
     let blog = await blogModel.findById(blogId);
-    let updatedBody = blog.body;
-    updatedBody += req.body.body;
-    let updatedTags = blog.tags;
-    updatedTags.push(req.body.tags);
-    let updatedSubcategory = blog.subcategory;
-    updatedSubcategory.push(req.body.subcategory);
 
     //Because tags , subcategory and body data needs to be added in pre-existing data, so they are updated in this manner
+    //tags updation
     if ("tags" in fieldToUpdate) {
-      fieldToUpdate.tags = updatedTags;
+      if (!blog.tags.includes(req.body.tags)) blog.tags.push(req.body.tags);
+      fieldToUpdate.tags = blog.tags;
     }
+    //subcategory updation
     if ("subcategory" in fieldToUpdate) {
-      fieldToUpdate.subcategory = updatedSubcategory;
+      if (!blog.subcategory.includes(req.body.subcategory))
+        blog.subcategory.push(req.body.subcategory);
+      fieldToUpdate.subcategory = blog.subcategory;
     }
+    //body updation
+    let body = blog.body;
+    body += req.body.body;
     if ("body" in fieldToUpdate) {
-      fieldToUpdate.body = updatedBody;
+      fieldToUpdate.body = body;
     }
     //If there is a key named isPublished in req.body so we will add a new key named publishedAt in our document to get the date and time it is published
     if ("isPublished" in fieldToUpdate) {

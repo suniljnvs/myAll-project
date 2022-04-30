@@ -105,7 +105,7 @@ const loginAuthor = async function (req, res) {
       password: password,
     });
     if (!loginCredentials)
-      return res.status(404).send({
+      return res.status(400).send({
         status: false,
         error: "email or password is incorrect",
       });
@@ -117,7 +117,8 @@ const loginAuthor = async function (req, res) {
       },
       "project1-group13"
     );
-    res.status(201).send({ status: true, msg: token });
+    res.setHeader("x-api-key",token)
+    res.status(201).send({ status: true, msg:"Login Successfull! Token sent in header (x-api-key) " });
   } catch (err) {
     res.status(500).send({ msg: "Internal Server Error", error: err.message });
   }
