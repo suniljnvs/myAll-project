@@ -100,7 +100,7 @@ const authorisation = async function (req, res, next) {
     }
 
     //CASE-3(authorId VALIDATION): authorId key's value in query param is empty
-    else if (!authorId) {
+    else if (!authorId&&!blogId) {
       return res.status(400).send({
         status: false,
         msg: "Please enter authorId to proceed",
