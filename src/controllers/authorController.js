@@ -11,6 +11,8 @@ const createAuthor = async function (req, res) {
       return res
         .status(400)
         .send({ status: false, msg: "Please Enter fname(required field) " });
+    }else if (!isNaN(data.fname)){
+      res.status(400).send({status : false, msg : "fname cannot be a number"})
     }
 
     // lname validation
@@ -18,6 +20,8 @@ const createAuthor = async function (req, res) {
       return res
         .status(400)
         .send({ status: false, msg: " Please Enter lname(required field)" });
+    }else if (!isNaN(data.lname)){
+      res.status(400).send({status : false, msg : "lname cannot be a number"})
     }
 
     // title validation
@@ -115,7 +119,10 @@ const loginAuthor = async function (req, res) {
         books: "Novels",
         writer: "Author",
       },
-      "project1-group13"
+      "project1-group13",
+      {
+        expiresIn: "120s"
+      }
     );
     res.setHeader("x-api-key",token)
     res.status(201).send({ status: true, msg:"Login Successfull! Token sent in header (x-api-key) " });
