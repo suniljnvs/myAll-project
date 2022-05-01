@@ -22,6 +22,10 @@ let arrManipulation = function (conditionArr) {
   }
 };
 
+function onlySpaces(str) {
+  return /^\s*$/.test(str);
+}
+
 //------------------------------------------------------------------------------------------------------------------------------------------------------
 
 const createBlog = async function (req, res) {
@@ -76,9 +80,6 @@ const createBlog = async function (req, res) {
             status: false,
             msg: "Empty Spaces are not accepted in " + `${key}`,
           });
-        }
-        function onlySpaces(str) {
-          return /^\s*$/.test(str);
         }
       }
 
@@ -136,9 +137,11 @@ const getBlogs = async function (req, res) {
     // We should not be able to list deleted(isDeleted: true) blogs using "getBlogs"
     conditionArr.push({ isDeleted: false });
 
-    let Blogs = await blogModel.find({
-      $and: conditionArr,
-    }).populate('authorId');
+    let Blogs = await blogModel
+      .find({
+        $and: conditionArr,
+      })
+      .populate("authorId");
 
     if (Blogs.length === 0) {
       return res
@@ -185,9 +188,6 @@ const updateBlog = async function (req, res) {
           errro: "Empty Spaces are not accepted in " + `${key}`,
         });
       }
-    }
-    function onlySpaces(str) {
-      return /^\s*$/.test(str);
     }
     //now we have only those key-value pair combinations which are passed by the client
     //Because our body and subcategory are an array of string , so we have to push the req.body data into the pre-existing data and similiarly in case of body which is string by type we are concatenating the new data to the pre existing string.
