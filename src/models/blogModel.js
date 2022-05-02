@@ -11,7 +11,7 @@ const blogSchema = new mongoose.Schema(
 
     subcategory: [String],
 
-    // deletedAt: String,
+    deletedAt: String,
 
     isDeleted: { type: Boolean, default: false },
     isPublished: { type: Boolean, default: false },
