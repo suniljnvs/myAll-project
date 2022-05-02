@@ -11,8 +11,8 @@ const createAuthor = async function (req, res) {
       return res
         .status(400)
         .send({ status: false, msg: "Please Enter fname(required field) " });
-    }else if (!isNaN(data.fname)){
-      res.status(400).send({status : false, msg : "fname cannot be a number"})
+    } else if (!isNaN(data.fname)) {
+      res.status(400).send({ status: false, msg: "fname cannot be a number" });
     }
 
     // lname validation
@@ -20,8 +20,8 @@ const createAuthor = async function (req, res) {
       return res
         .status(400)
         .send({ status: false, msg: " Please Enter lname(required field)" });
-    }else if (!isNaN(data.lname)){
-      res.status(400).send({status : false, msg : "lname cannot be a number"})
+    } else if (!isNaN(data.lname)) {
+      res.status(400).send({ status: false, msg: "lname cannot be a number" });
     }
 
     // title validation
@@ -121,11 +121,17 @@ const loginAuthor = async function (req, res) {
       },
       "project1-group13",
       {
-        expiresIn: "120s"
+        expiresIn: "120s",
       }
     );
-    res.setHeader("x-api-key",token)
-    res.status(201).send({ status: true, msg:"Login Successfull! Token sent in header (x-api-key) " });
+    res.setHeader("x-api-key", token);
+    res
+      .status(201)
+      .send({
+        status: true,
+        msg: "Login Successfull! Token sent in header (x-api-key) ",
+        data: { token: token },
+      });
   } catch (err) {
     res.status(500).send({ msg: "Internal Server Error", error: err.message });
   }

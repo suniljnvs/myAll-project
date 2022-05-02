@@ -67,7 +67,6 @@ const createBlog = async function (req, res) {
           msg: " Please enter category for the blog (Required Field)",
         });
 
-
       // only spaces validation
       for (const [key, value] of Object.entries(req.body)) {
         if (onlySpaces(`${value}`) == true) {
@@ -77,7 +76,7 @@ const createBlog = async function (req, res) {
           });
         }
       }
-      
+
       //isPublished validation
       let isPublishedArr = ["true", "false", "", undefined]; //undefined(key value is not entered in req.body)
       if (!isPublishedArr.includes(isPublished)) {
@@ -328,53 +327,53 @@ const deleteBlogsQueryParams = async function (req, res) {
           msg: "We are sorry; authorId does not exist",
         });
       }
-      // isPublished validation:
-      let isPublishedArr = ["true", "false", "", undefined]; //undefined(key value is not entered in req.body)
-      if (!isPublishedArr.includes(isPublished)) {
-        return res.status(400).send({
-          status: false,
-          msg: "isPublished has invalid value!",
-        });
-      }
-
-      // Authorisation
-      if (authoridQP && authorid.toString() !== authoridQP) {
-        return res.status(401).send({
-          status: false,
-          msg: "Authorisation Failed!",
-        });
-      }
-
-      //Array containing query params as objects
-      let conditionArr = [
-        { category: category },
-        { authorId: authorid }, //conditionArr contains authorid against email in the token; user is able to delete only his blogs
-        { tags: tagName },
-        { subcategory: subcategoryName },
-        { isPublished: isPublished },
-      ];
-
-      //ConditionArr is manipulated in such a way that if values(against respective keys in query params) are not entered then that object is eliminated all together from ConditionArr
-      arrManipulation(conditionArr);
-
-      let Blogs = await blogModel.find({
-        $and: conditionArr,
+    }
+    // isPublished validation:
+    let isPublishedArr = ["true", "false", "", undefined]; //undefined(key value is not entered in req.body)
+    if (!isPublishedArr.includes(isPublished)) {
+      return res.status(400).send({
+        status: false,
+        msg: "isPublished has invalid value!",
       });
+    }
 
-      if (Blogs.length === 0) {
-        return res
-          .status(404)
-          .send({ status: false, msg: "We are sorry; Blog does not exist" });
-      }
+    // Authorisation
+    if (authoridQP && authorid.toString() !== authoridQP) {
+      return res.status(401).send({
+        status: false,
+        msg: "Authorisation Failed!",
+      });
+    }
 
-      // If there exists blog(s) satisfying the conditions
-      if (Blogs.length !== 0) {
-        let deleteBlogs = await blogModel.updateMany(
-          { $and: conditionArr },
-          { isDeleted: true , deletedAt : new Date()}
-        );
-        return res.status(200).send({ status: true, msg: deleteBlogs });
-      }
+    //Array containing query params as objects
+    let conditionArr = [
+      { category: category },
+      { authorId: authorid }, //conditionArr contains authorid against email in the token; user is able to delete only his blogs
+      { tags: tagName },
+      { subcategory: subcategoryName },
+      { isPublished: isPublished },
+    ];
+
+    //ConditionArr is manipulated in such a way that if values(against respective keys in query params) are not entered then that object is eliminated all together from ConditionArr
+    arrManipulation(conditionArr);
+
+    let Blogs = await blogModel.find({
+      $and: conditionArr,
+    });
+
+    if (Blogs.length === 0) {
+      return res
+        .status(404)
+        .send({ status: false, msg: "We are sorry; Blog does not exist" });
+    }
+
+    // If there exists blog(s) satisfying the conditions
+    if (Blogs.length !== 0) {
+      let deleteBlogs = await blogModel.updateMany(
+        { $and: conditionArr },
+        { isDeleted: true, deletedAt: new Date() }
+      );
+      return res.status(200).send({ status: true, msg: deleteBlogs });
     }
   } catch (err) {
     res.status(500).send({ msg: "Internal Server Error", error: err.message });
