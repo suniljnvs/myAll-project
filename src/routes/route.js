@@ -22,10 +22,11 @@ router.delete(
   middleware.authorisation,
   blogController.deleteBlog
 );
+
+// Here, authorisation is done inside the handler to improve user experience
 router.delete(
   "/blogs",
   middleware.authentication,
-  middleware.authorisation,
   blogController.deleteBlogsQueryParams
 );
 
