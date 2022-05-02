@@ -371,7 +371,7 @@ const deleteBlogsQueryParams = async function (req, res) {
       if (Blogs.length !== 0) {
         let deleteBlogs = await blogModel.updateMany(
           { $and: conditionArr },
-          { isDeleted: true }
+          { isDeleted: true , deletedAt : new Date()}
         );
         return res.status(200).send({ status: true, msg: deleteBlogs });
       }
