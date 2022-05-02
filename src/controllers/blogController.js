@@ -67,12 +67,6 @@ const createBlog = async function (req, res) {
           msg: " Please enter category for the blog (Required Field)",
         });
 
-      //isPublished validation
-      if (data.isPublished != true || data.isPublished != false)
-        return res.status(400).send({
-          status: false,
-          msg: "isPublished invalid ! allowed values : true , false",
-        });
 
       // only spaces validation
       for (const [key, value] of Object.entries(req.body)) {
@@ -82,6 +76,15 @@ const createBlog = async function (req, res) {
             msg: "Empty Spaces are not accepted in " + `${key}`,
           });
         }
+      }
+      
+      //isPublished validation
+      let isPublishedArr = ["true", "false", "", undefined]; //undefined(key value is not entered in req.body)
+      if (!isPublishedArr.includes(isPublished)) {
+        return res.status(400).send({
+          status: false,
+          msg: "isPublished has invalid value!",
+        });
       }
 
       let blog = req.body;
