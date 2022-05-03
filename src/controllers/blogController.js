@@ -222,7 +222,7 @@ const updateBlog = async function (req, res) {
       fieldToUpdate.isPublished = "false";
       blog.publishedAt = undefined;
       delete blog.publishedAt;
-      blog.save();
+      await blog.save();
     }
     if (req.body.isPublished == true) {
       fieldToUpdate.isPublished = "true";
@@ -233,7 +233,7 @@ const updateBlog = async function (req, res) {
       let updatedData = await blogModel.findByIdAndUpdate(
         blogId,
         { $set: { ...fieldToUpdate } },
-        { new: true, upsert: true }
+        { new: true }
       );
       return res.status(200).send({ status: true, data: updatedData });
     }
@@ -290,9 +290,7 @@ const deleteBlog = async function (req, res) {
           isDeleted: true,
           deletedAt: new Date(),
         }
-        // ,{ new: true } //We can skip this since, anyways we are not sending the databack using response
       );
-      // return res.status(200).send({ status: false, msg: savedData }); //Commented: CAN BE USED FOR TESTING
       return res.status(200).send();
     }
   } catch (err) {
@@ -319,6 +317,20 @@ const deleteBlogsQueryParams = async function (req, res) {
     // authorid contains authorId against email present in the token
     let authorid = authorId._id;
     let authoridQP = req.query.authorid;
+
+    // if no query param is entered
+    if (
+      !category &&
+      !tagName &&
+      !subcategoryName &&
+      !isPublished &&
+      !authoridQP
+    ) {
+      return res.status(400).send({
+        status: false,
+        msg: "Operation Failed; Please enter any one query param to proceed!",
+      });
+    }
 
     // DATA VALIDATIONS:
     if (authoridQP) {
@@ -367,6 +379,9 @@ const deleteBlogsQueryParams = async function (req, res) {
 
     //ConditionArr is manipulated in such a way that if values(against respective keys in query params) are not entered then that object is eliminated all together from ConditionArr
     arrManipulation(conditionArr);
+
+    // We should not be able to delete deleted(isDeleted: true) blogs
+    conditionArr.push({ isDeleted: false });
 
     let Blogs = await blogModel.find({
       $and: conditionArr,
