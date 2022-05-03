@@ -5,14 +5,19 @@ const createAuthor = async function (req, res) {
   try {
     let data = req.body;
 
+    function onlySpaces(str) {
+      return /^\s*$/.test(str);
+    }
     // VALIDATION:
     // fname validation
     if (!data.fname) {
       return res
         .status(400)
         .send({ status: false, msg: "Please Enter fname(required field) " });
-    } else if (!isNaN(data.fname)) {
-      res.status(400).send({ status: false, msg: "fname cannot be a number" });
+    } else if(onlySpaces(data.fname)==true){
+     return res.status(400).send({ status: false, msg: "fname cannot be a empty" });
+    }else if (!isNaN(data.fname)) {
+      return res.status(400).send({ status: false, msg: "fname cannot be a number" });
     }
 
     // lname validation
@@ -20,8 +25,10 @@ const createAuthor = async function (req, res) {
       return res
         .status(400)
         .send({ status: false, msg: " Please Enter lname(required field)" });
+    } else if(onlySpaces(data.lname)==true){
+      return res.status(400).send({ status: false, msg: "lname cannot be a empty" });
     } else if (!isNaN(data.lname)) {
-      res.status(400).send({ status: false, msg: "lname cannot be a number" });
+     return res.status(400).send({ status: false, msg: "lname cannot be a number" });
     }
 
     // title validation
@@ -30,7 +37,9 @@ const createAuthor = async function (req, res) {
       return res
         .status(400)
         .send({ status: false, msg: " Please Enter title(required field)" });
-    } else if (!enumArr.includes(data.title)) {
+    }  else if(onlySpaces(data.title)==true){
+     return res.status(400).send({ status: false, msg: "title cannot be a empty" });
+    }else if (!enumArr.includes(data.title)) {
       return res
         .status(400)
         .send({ status: false, msg: "Please enter valid title" });
@@ -41,6 +50,8 @@ const createAuthor = async function (req, res) {
       return res
         .status(400)
         .send({ status: false, msg: " Please Enter email(required field)" });
+    } else if(onlySpaces(data.email)==true){
+     return res.status(400).send({ status: false, msg: "email cannot be a empty" });
     } else if (data.email) {
       let check = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(
         data.email
@@ -74,19 +85,10 @@ const createAuthor = async function (req, res) {
       return res
         .status(400)
         .send({ status: false, msg: " Please enter password(required field)" });
+    } else if(onlySpaces(data.password)==true){
+     return res.status(400).send({ status: false, msg: "password cannot be a empty" });
     }
 
-    for (const [key, value] of Object.entries(req.body)) {
-      if (onlySpaces(`${value}`) == true) {
-        return res.status(400).send({
-          status: false,
-          msg: "Empty Spaces are not accepted in " + `${key}`,
-        });
-      }
-      function onlySpaces(str) {
-        return /^\s*$/.test(str);
-      }
-    }
 
     let savedData = await authorModel.create(data);
     res.status(201).send({ status: true, msg: savedData });
@@ -127,7 +129,7 @@ const loginAuthor = async function (req, res) {
       }
     );
     res.setHeader("x-api-key", token);
-    res.status(201).send({
+    res.status(200).send({
       status: true,
       msg: "Login Successfull! Token sent in header (x-api-key) ",
       data: { token: token },
