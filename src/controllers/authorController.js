@@ -113,25 +113,25 @@ const loginAuthor = async function (req, res) {
         status: false,
         error: "email or password is incorrect",
       });
+
     let token = jwt.sign(
       {
         email: loginCredentials.email.toString(),
+        authorId: loginCredentials._id,
         books: "Novels",
         writer: "Author",
       },
       "project1-group13",
       {
-        expiresIn: "120s",
+        expiresIn: "1200s",
       }
     );
     res.setHeader("x-api-key", token);
-    res
-      .status(201)
-      .send({
-        status: true,
-        msg: "Login Successfull! Token sent in header (x-api-key) ",
-        data: { token: token },
-      });
+    res.status(201).send({
+      status: true,
+      msg: "Login Successfull! Token sent in header (x-api-key) ",
+      data: { token: token },
+    });
   } catch (err) {
     res.status(500).send({ msg: "Internal Server Error", error: err.message });
   }

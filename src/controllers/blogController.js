@@ -77,15 +77,6 @@ const createBlog = async function (req, res) {
         }
       }
 
-      //isPublished validation
-      let isPublishedArr = ["true", "false", "", undefined]; //undefined(key value is not entered in req.body)
-      if (!isPublishedArr.includes(isPublished)) {
-        return res.status(400).send({
-          status: false,
-          msg: "isPublished has invalid value!",
-        });
-      }
-
       let blog = req.body;
       let blogCreated = await blogModel.create(blog);
       res.status(201).send({ status: true, data: blogCreated });
@@ -109,7 +100,7 @@ const getBlogs = async function (req, res) {
 
     // DATA VALIDATIONS:
     //CASE-1: Every query param's value is empty, i.e., ""(empty string)
-    let data = await blogModel.find().populate("authorId");
+    let data = await blogModel.find({ isDeleted: false }).populate("authorId");
     if (!authorid && !category && !tags && !subcategory) {
       return res.status(400).send({
         status: false,
