@@ -35,16 +35,23 @@ const createBlog = async function (req, res) {
     if (Object.keys(data).length != 0) {
       // If authorId is not entered
       let authorId = req.body.authorId;
-      if (!authorId) return res.send({ msg: "authorId is required" });
+      if (!authorId)
+        return res
+          .status(400)
+          .send({ status: false, msg: "authorId is required" });
 
       // If authorId is invalid
       if (!mongoose.Types.ObjectId.isValid(authorId)) {
-        return res.status(400).send({ msg: "authorId is invalid" });
+        return res
+          .status(400)
+          .send({ status: false, msg: "authorId is invalid" });
       }
       // If given authorId is not present in our database
       let validationAuthorId = await authorModel.findById(authorId);
       if (!validationAuthorId)
-        return res.send({ msg: "authorId does not exist" });
+        return res
+          .status(400)
+          .send({ status: false, msg: "authorId does not exist" });
 
       // title validation
       if (!data.title)
@@ -79,6 +86,10 @@ const createBlog = async function (req, res) {
 
       let blog = req.body;
       let blogCreated = await blogModel.create(blog);
+      if (data.isPublished == true) {
+        blogCreated.publishedAt = new Date();
+        await blogCreated.save();
+      }
       res.status(201).send({ status: true, data: blogCreated });
     } else {
       return res.status(400).send({ status: false, msg: "Bad request" });
@@ -100,10 +111,12 @@ const getBlogs = async function (req, res) {
 
     // DATA VALIDATIONS:
     //CASE-1: Every query param's value is empty, i.e., ""(empty string)
-    let data = await blogModel.find({ isDeleted: false }).populate("authorId");
+    let data = await blogModel
+      .find({ isDeleted: false, isPublished: true })
+      .populate("authorId");
     if (!authorid && !category && !tags && !subcategory) {
-      return res.status(400).send({
-        status: false,
+      return res.status(200).send({
+        status: true,
         msg: "No query parameter(s) applied ",
         data: data,
       });
@@ -129,7 +142,7 @@ const getBlogs = async function (req, res) {
     arrManipulation(conditionArr);
 
     // We should not be able to list deleted(isDeleted: true) blogs using "getBlogs"
-    conditionArr.push({ isDeleted: false });
+    conditionArr.push({ isDeleted: false, isPublished: true });
 
     let Blogs = await blogModel
       .find({
@@ -168,7 +181,6 @@ const updateBlog = async function (req, res) {
       tags: req.body.tags,
       isPublished: req.body.isPublished,
       category: req.body.category,
-      isPublished: req.body.isPublished,
     };
     //The keys which are not present in req.body have their value as null and in case of boolean type field it would be false, so those keys are deleted by running the for-loop for all the key-value pairs of our object "fieldToUpdate"
     //Object.entries(fieldToUpdate) would return an array of key-value pairs of the object fieldToUpdate
@@ -206,7 +218,14 @@ const updateBlog = async function (req, res) {
       fieldToUpdate.body = body;
     }
     //If there is a key named isPublished in req.body so we will add a new key named publishedAt in our document to get the date and time it is published
-    if ("isPublished" in fieldToUpdate) {
+    if (req.body.isPublished == false) {
+      fieldToUpdate.isPublished = "false";
+      blog.publishedAt = undefined;
+      delete blog.publishedAt;
+      blog.save();
+    }
+    if (req.body.isPublished == true) {
+      fieldToUpdate.isPublished = "true";
       fieldToUpdate.publishedAt = today;
     }
 
@@ -269,6 +288,7 @@ const deleteBlog = async function (req, res) {
         },
         {
           isDeleted: true,
+          deletedAt: new Date(),
         }
         // ,{ new: true } //We can skip this since, anyways we are not sending the databack using response
       );
